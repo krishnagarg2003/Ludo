@@ -200,6 +200,8 @@ class LudoController extends GetxController {
     } else {
       for (int i = 0; i < steps; i++) {
         token.position++;
+        token.steps++;
+        token.score++;
         tokens.refresh();
         await Future.delayed(const Duration(milliseconds: 200));
       }
@@ -234,7 +236,13 @@ class LudoController extends GetxController {
     for (var otherToken in tokens) {
       if (otherToken.color != token.color && otherToken.position >= 0 && otherToken.position < 51) {
         if (getOffsetForToken(otherToken) == currentPos) {
-          otherToken.position = -1; 
+          otherToken.position = -1;
+          otherToken.steps = 0;
+          otherToken.score = otherToken.score >= 5
+              ? otherToken.score - 5
+              : 0;
+          token.kills++;
+          token.score += 10;
           killed = true;
         }
       }

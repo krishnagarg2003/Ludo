@@ -81,6 +81,34 @@ class LudoView extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 8),
+
+                Obx(() {
+                  int redScore = controller.tokens
+                      .where((e) => e.color == PlayerColor.red)
+                      .fold(0, (a, b) => a + b.score);
+
+                  int greenScore = controller.tokens
+                      .where((e) => e.color == PlayerColor.green)
+                      .fold(0, (a, b) => a + b.score);
+
+                  int yellowScore = controller.tokens
+                      .where((e) => e.color == PlayerColor.yellow)
+                      .fold(0, (a, b) => a + b.score);
+
+                  int blueScore = controller.tokens
+                      .where((e) => e.color == PlayerColor.blue)
+                      .fold(0, (a, b) => a + b.score);
+
+                  return Row(
+                    children: [
+                      _scoreChip(LudoColors.red, redScore),
+                      _scoreChip(LudoColors.green, greenScore),
+                      _scoreChip(LudoColors.yellow, yellowScore),
+                      _scoreChip(LudoColors.blue, blueScore),
+                    ],
+                  );
+                }),
               ],
             ),
           ),
@@ -210,58 +238,133 @@ class LudoView extends StatelessWidget {
     );
   }
 
-  Widget _buildToken(TokenModel token, bool isMoveable, double cellSize) {
+  Widget _buildToken(
+      TokenModel token,
+      bool isMoveable,
+      double cellSize,
+      ) {
     Color color = _getPlayerColor(token.color);
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (isMoveable)
-            TweenAnimationBuilder(
-              tween: Tween<double>(begin: 1.0, end: 1.5),
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeInOut,
-              builder: (context, value, child) {
-                return Container(
-                  width: cellSize * 0.8 * value,
-                  height: cellSize * 0.8 * value,
+
+    return TweenAnimationBuilder(
+      tween: Tween<double>(
+        begin: 0.95,
+        end: isMoveable ? 1.1 : 1.0,
+      ),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+
+              /// Glow
+              if (isMoveable)
+                Container(
+                  width: cellSize,
+                  height: cellSize,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: color.withValues(alpha: 0.1),
-                        blurRadius: 4 * value,
-                        spreadRadius: 2 * value,
+                        color: color.withOpacity(0.7),
+                        blurRadius: 18,
+                        spreadRadius: 4,
                       )
                     ],
                   ),
-                );
-              },
-              onEnd: () {},
-            ),
-          SizedBox(
-            width: cellSize * 0.9,
-            height: cellSize * 0.9,
-            child: CustomPaint(
-              painter: PremiumPawnPainter(color),
-            ),
-          ),
-          if (isMoveable)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.touch_app, size: 10, color: color),
+
+              /// Main pawn
+              Container(
+                width: cellSize * 0.82,
+                height: cellSize * 0.82,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      color,
+                      color.withOpacity(0.8),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.5),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
-      ),
+
+              /// Pawn Icon
+              Icon(
+                Icons.person_rounded,
+                color: Colors.white,
+                size: cellSize * 0.42,
+              ),
+
+              /// Steps Counter
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    "${token.steps}",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: cellSize * 0.16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              /// Kill Counter
+              if (token.kills > 0)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                      ),
+                    ),
+                    child: Text(
+                      "${token.kills}",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: cellSize * 0.15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -454,6 +557,27 @@ class LudoView extends StatelessWidget {
       case PlayerColor.yellow: return LudoColors.yellow;
     }
   }
+}
+Widget _scoreChip(Color color, int score) {
+  return Container(
+    margin: const EdgeInsets.only(right: 6),
+    padding: const EdgeInsets.symmetric(
+      horizontal: 10,
+      vertical: 4,
+    ),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.2),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: color),
+    ),
+    child: Text(
+      "$score",
+      style: TextStyle(
+        color: color,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
 }
 
 class PremiumPawnPainter extends CustomPainter {
